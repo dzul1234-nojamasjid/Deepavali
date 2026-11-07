@@ -82,13 +82,12 @@
   }
   .footer .respect{font-size:0.75rem; font-style:italic; opacity:0.6; margin-top:8px;}
   
-  /* ===== TEKS ARAHAN KETUK YANG BARU (MACAM BUTANG) ===== */
   .tap-hint {
     margin-top: 22px;
     display: inline-block;
     padding: 12px 24px;
-    background: #ffd700; /* Warna emas terang */
-    color: #1a0b2e; /* Teks warna gelap supaya kontras */
+    background: #ffd700;
+    color: #1a0b2e;
     font-size: 0.95rem;
     font-weight: 900;
     border-radius: 30px;
@@ -173,7 +172,6 @@
       </div>
     </div>
 
-    <!-- Teks arahan klik yang baru dan menonjol -->
     <div class="tap-hint" id="tapHint">🎵 Tap Here to Play Music</div>
   </div>
 </div>
@@ -282,14 +280,26 @@ document.getElementById('fwBtn').onclick=(e)=>{
   if(fwOn)burst(W/2,H*0.35);
 };
 
-/* ===== AUDIO ===== */
+/* ===== AUDIO: Enhanced Ambient Echo ===== */
 let audioCtx=null, musicOn=true, musicTimer=null;
+let delayNode, feedbackGain;
 const soundBtn=document.getElementById('soundBtn');
 const tapHint = document.getElementById('tapHint');
 
 function initAudio(){
   if(audioCtx)return;
   audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  
+  // Setup Echo/Delay Effect
+  delayNode = audioCtx.createDelay();
+  feedbackGain = audioCtx.createGain();
+  
+  delayNode.delayTime.value = 0.4; // Masa echo
+  feedbackGain.gain.value = 0.3; // Berapa kali echo berulang (30%)
+  
+  delayNode.connect(feedbackGain);
+  feedbackGain.connect(delayNode); // Loop untuk echo berulang
+  delayNode.connect(audioCtx.destination);
 }
 
 const scales = [
@@ -304,20 +314,27 @@ const melodies = [
   [0, 2, 3, 4, 3, 2, 0, 1, 2, 3, 4, 5, 4, 3, 2, 0]
 ];
 
-function playPluck(freq, when, vol=0.12){
+function playPluck(freq, when, vol=0.12, useEcho=false){
   const osc=audioCtx.createOscillator();
   const g=audioCtx.createGain();
   osc.type='triangle'; 
   osc.frequency.setValueAtTime(freq, when);
   osc.frequency.exponentialRampToValueAtTime(freq*0.98, when+0.2);
+  
   g.gain.setValueAtTime(0, when);
   g.gain.linearRampToValueAtTime(vol, when+0.02);
   g.gain.exponentialRampToValueAtTime(0.001, when+1.2);
-  osc.connect(g); g.connect(audioCtx.destination);
+  
+  osc.connect(g);
+  if(useEcho && delayNode) {
+    g.connect(delayNode);
+  }
+  g.connect(audioCtx.destination);
+  
   osc.start(when); osc.stop(when+1.3);
 }
 
-function playFlute(freq, dur, when, vol=0.06){
+function playFlute(freq, dur, when, vol=0.06, useEcho=false){
   const osc=audioCtx.createOscillator();
   const g=audioCtx.createGain();
   osc.type='sine';
@@ -331,16 +348,21 @@ function playFlute(freq, dur, when, vol=0.06){
   lfo.start(when);
   
   g.gain.setValueAtTime(0, when);
-  g.gain.linearRampToValueAtTime(vol, when+0.15);
-  g.gain.setValueAtTime(vol, when+dur-0.15);
+  g.gain.linearRampToValueAtTime(vol, when+0.2); // Attack lebih lembut
+  g.gain.setValueAtTime(vol, when+dur-0.2);
   g.gain.linearRampToValueAtTime(0, when+dur);
   
-  osc.connect(g); g.connect(audioCtx.destination);
+  osc.connect(g);
+  if(useEcho && delayNode) {
+    g.connect(delayNode);
+  }
+  g.connect(audioCtx.destination);
+  
   osc.start(when); osc.stop(when+dur);
   lfo.stop(when+dur);
 }
 
-function playBell(freq, when, vol=0.05) {
+function playBell(freq, when, vol=0.03) {
   const osc = audioCtx.createOscillator();
   const g = audioCtx.createGain();
   osc.type = 'sine';
@@ -370,23 +392,27 @@ function playRandomPattern(){
   
   const scale = scales[scaleIdx];
   const melody = melodies[melodyIdx];
-  const tempo = 0.4; 
+  const tempo = 0.42; // Sedikit perlahan untuk feel yang lebih chill
 
   melody.forEach((idx, i) => {
     const f = scale[idx % scale.length] * 2; 
-    playPluck(f, now + i*tempo, 0.1);
+    // Main melodi utama dengan Echo
+    playPluck(f, now + i*tempo, 0.1, true);
     
+    // Genta kecil pada rentak genap (volum dikurangkan)
     if (i % 2 === 0) {
-      playBell(scale[idx % scale.length], now + i*tempo, 0.04);
+      playBell(scale[idx % scale.length], now + i*tempo, 0.02);
     }
 
+    // Seruling panjang dengan Echo
     if (i % 4 === 0) {
-      playFlute(scale[idx] * 1.5, tempo*1.5, now + i*tempo, 0.04);
+      playFlute(scale[idx] * 1.5, tempo*2, now + i*tempo, 0.04, true);
     }
   });
   
+  // Bass drone
   for(let i=0;i<8;i++){
-    playPluck(scale[0]/2, now + i*tempo*2, 0.06);
+    playPluck(scale[0]/2, now + i*tempo*2, 0.05, false);
   }
   
   musicTimer = setTimeout(playRandomPattern, melody.length*tempo*1000);
