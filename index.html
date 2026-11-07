@@ -81,6 +81,22 @@
     border-top:1px solid rgba(255,180,0,0.25); padding-top:14px; margin-top:6px;
   }
   .footer .respect{font-size:0.75rem; font-style:italic; opacity:0.6; margin-top:8px;}
+  
+  /* ===== TEKS ARAHAN KETUK ===== */
+  .tap-hint {
+    margin-top: 20px;
+    font-size: 0.9rem;
+    color: var(--gold);
+    font-weight: bold;
+    letter-spacing: 1px;
+    animation: pulseHint 1.5s infinite;
+    cursor: pointer;
+  }
+  @keyframes pulseHint {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.05); }
+  }
+
   .controls{
     position:fixed; top:16px; right:16px; z-index:10;
     display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;
@@ -149,6 +165,9 @@
         Sent with utmost respect and warm regards.
       </div>
     </div>
+
+    <!-- Teks arahan klik -->
+    <div class="tap-hint" id="tapHint">👆 Tap anywhere to turn on music 🎵</div>
   </div>
 </div>
 
@@ -158,7 +177,8 @@ const themes=['dark','light','dim'];
 const icons={dark:'🌙',light:'☀️',dim:'🌆'};
 let tIdx=0;
 const themeBtn=document.getElementById('themeBtn');
-themeBtn.onclick=()=>{
+themeBtn.onclick=(e)=>{
+  e.stopPropagation(); // Elak dari trigger audio main 2 kali
   tIdx=(tIdx+1)%3;
   document.body.className=themes[tIdx];
   themeBtn.textContent=icons[themes[tIdx]];
@@ -248,29 +268,29 @@ setInterval(()=>{
 },1400);
 setTimeout(()=>{if(fwOn)burst(W/2,H*0.3);},300);
 
-document.getElementById('fwBtn').onclick=function(){
+document.getElementById('fwBtn').onclick=(e)=>{
+  e.stopPropagation(); 
   fwOn=!fwOn;
   this.classList.toggle('active',fwOn);
   if(fwOn)burst(W/2,H*0.35);
 };
 
-/* ===== AUDIO: 3 DIFFERENT MELODIES (Randomly combined) ===== */
+/* ===== AUDIO: Uplifted Indian Festival Vibe ===== */
 let audioCtx=null, musicOn=true, musicTimer=null;
 const soundBtn=document.getElementById('soundBtn');
+const tapHint = document.getElementById('tapHint');
 
 function initAudio(){
   if(audioCtx)return;
   audioCtx=new (window.AudioContext||window.webkitAudioContext)();
 }
 
-// Skala Raga India (Kafi, Bhairavi, Asavari)
 const scales = [
-  [261.63, 293.66, 311.13, 349.23, 392.00, 440.00, 466.16, 523.25], // Raga Kafi
-  [261.63, 277.18, 311.13, 349.23, 392.00, 415.30, 466.16, 523.25], // Raga Bhairavi
-  [261.63, 293.66, 311.13, 349.23, 392.00, 415.30, 466.16, 523.25]  // Raga Asavari
+  [261.63, 293.66, 311.13, 349.23, 392.00, 440.00, 466.16, 523.25], 
+  [261.63, 277.18, 311.13, 349.23, 392.00, 415.30, 466.16, 523.25], 
+  [261.63, 293.66, 311.13, 349.23, 392.00, 415.30, 466.16, 523.25]  
 ];
 
-// 3 corak melodi berbeza
 const melodies = [
   [0, 2, 4, 2, 1, 0, 1, 2, 4, 5, 4, 2, 1, 0, 0, 0],
   [0, 1, 2, 3, 4, 3, 2, 1, 0, 2, 4, 5, 6, 5, 4, 2],
@@ -313,6 +333,19 @@ function playFlute(freq, dur, when, vol=0.06){
   lfo.stop(when+dur);
 }
 
+// Bunyi loceng/genta kecil (menambah keceriaan)
+function playBell(freq, when, vol=0.05) {
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(freq * 2, when);
+  g.gain.setValueAtTime(0, when);
+  g.gain.linearRampToValueAtTime(vol, when + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.001, when + 0.5);
+  osc.connect(g); g.connect(audioCtx.destination);
+  osc.start(when); osc.stop(when + 0.5);
+}
+
 function playSparkleSound(){
   if(!musicOn || !audioCtx) return;
   const now = audioCtx.currentTime;
@@ -326,35 +359,38 @@ function playRandomPattern(){
   if(!musicOn || !audioCtx) return;
   const now = audioCtx.currentTime;
   
-  // Pilih melodi dan skala secara rawak
   const scaleIdx = Math.floor(Math.random() * scales.length);
   const melodyIdx = Math.floor(Math.random() * melodies.length);
   
   const scale = scales[scaleIdx];
   const melody = melodies[melodyIdx];
-  const tempo = 0.65; // Laju perlahan, tak rushing
+  
+  // TEMPO DIPERCEPATKAN (0.65 -> 0.4) supaya lebih ceria
+  const tempo = 0.4; 
 
-  // Main melodi utama (Sitar)
   melody.forEach((idx, i) => {
     const f = scale[idx % scale.length] * 2; 
     playPluck(f, now + i*tempo, 0.1);
     
-    // Sesekali ada seruling
+    // Tambah bunyi loceng pada rentak 1 dan 3
+    if (i % 2 === 0) {
+      playBell(scale[idx % scale.length], now + i*tempo, 0.04);
+    }
+
     if (i % 4 === 0) {
-      playFlute(scale[idx] * 1.5, tempo*2.5, now + i*tempo, 0.03);
+      playFlute(scale[idx] * 1.5, tempo*1.5, now + i*tempo, 0.04);
     }
   });
   
-  // Bunyi bass bawah
-  for(let i=0;i<4;i++){
-    playPluck(scale[0]/2, now + i*tempo*4, 0.06);
+  for(let i=0;i<8;i++){
+    playPluck(scale[0]/2, now + i*tempo*2, 0.06);
   }
   
-  // Jadualkan corak seterusnya
   musicTimer = setTimeout(playRandomPattern, melody.length*tempo*1000);
 }
 
-soundBtn.onclick=()=>{
+soundBtn.onclick=(e)=>{
+  e.stopPropagation(); 
   initAudio();
   if(audioCtx.state==='suspended')audioCtx.resume();
   musicOn=!musicOn;
@@ -364,10 +400,20 @@ soundBtn.onclick=()=>{
   else{clearTimeout(musicTimer);}
 };
 
+// Fungsi bila skrin diketuk
 document.addEventListener('click',function once(){
   initAudio();
   if(audioCtx.state==='suspended')audioCtx.resume();
-  if(musicOn && !musicTimer) playRandomPattern();
+  
+  if(musicOn && !musicTimer) {
+    playRandomPattern();
+  }
+  
+  // Hilangkan teks arahan bila skrin dah diketuk
+  if(tapHint) {
+    tapHint.style.display = 'none';
+  }
+  
   document.removeEventListener('click',once);
 },{once:true});
 
