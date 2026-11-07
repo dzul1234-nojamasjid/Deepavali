@@ -28,7 +28,6 @@
     color:var(--text); overflow:hidden; transition:background 0.8s, color 0.8s;
     perspective:1200px;
   }
-  /* ==== BACKGROUND DIYA LIGHTS ==== */
   .diya-field{position:fixed;inset:0;pointer-events:none;z-index:0;}
   .diya{
     position:absolute; width:14px; height:14px; border-radius:50%;
@@ -40,9 +39,7 @@
     0%{opacity:0.6; transform:scale(0.9);}
     100%{opacity:1; transform:scale(1.15);}
   }
-  /* ==== FIREWORKS CANVAS ==== */
   #fw{position:fixed;inset:0;pointer-events:none;z-index:1;}
-  /* ==== 3D CARD ==== */
   .scene{position:relative;z-index:2;perspective:1500px;}
   .card{
     width:min(92vw,480px); padding:38px 30px 32px;
@@ -84,7 +81,6 @@
     border-top:1px solid rgba(255,180,0,0.25); padding-top:14px; margin-top:6px;
   }
   .footer .respect{font-size:0.75rem; font-style:italic; opacity:0.6; margin-top:8px;}
-  /* ==== CONTROLS ==== */
   .controls{
     position:fixed; top:16px; right:16px; z-index:10;
     display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;
@@ -97,10 +93,8 @@
   }
   .btn:hover{transform:scale(1.12); box-shadow:var(--glow);}
   .btn.active{background:var(--gold); color:var(--bg1);}
-  /* ==== SPARKLES ==== */
   .sparkle{position:absolute;pointer-events:none;color:var(--gold);font-size:12px;animation:sparkleUp 3s linear forwards;z-index:3;}
   @keyframes sparkleUp{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-120px) scale(0.2);}}
-  /* ==== OIL LAMP 3D ==== */
   .lamp-scene{perspective:600px; margin:0 auto 10px; width:80px; height:60px;}
   .lamp{
     position:relative; width:60px; height:30px; margin:0 auto;
@@ -142,7 +136,6 @@
       <div class="lamp"><div class="flame"></div></div>
     </div>
     
-    <!-- Om dan Vazhthukal dah dibuang -->
     <h1>Happy Deepavali</h1>
 
     <div class="msg">
@@ -151,7 +144,7 @@
 
     <div class="footer">
       Warmest wishes,<br>
-      <b>[dzul]</b>
+      <b>dzul 🪔✨</b>
       <div class="respect">
         Sent with utmost respect and warm regards.
       </div>
@@ -237,7 +230,6 @@ function burst(x,y){
   for(let i=0;i<n;i++){
     particles.push(new Particle(x,y,Math.random()<0.5?baseColor:COLORS[Math.floor(Math.random()*COLORS.length)]));
   }
-  // Bunyi halus setiap kali bunga api meletup
   playSparkleSound();
 }
 function loop(){
@@ -262,7 +254,7 @@ document.getElementById('fwBtn').onclick=function(){
   if(fwOn)burst(W/2,H*0.35);
 };
 
-/* ===== AUDIO: Classical Indian Vibe (Sitar/Flute style) ===== */
+/* ===== AUDIO: 3 DIFFERENT MELODIES (Randomly combined) ===== */
 let audioCtx=null, musicOn=true, musicTimer=null;
 const soundBtn=document.getElementById('soundBtn');
 
@@ -271,31 +263,39 @@ function initAudio(){
   audioCtx=new (window.AudioContext||window.webkitAudioContext)();
 }
 
-// Skala Raga Kafi (Memberi nuansa klasik India yang tenang & romantik)
-const scale=[261.63, 293.66, 311.13, 349.23, 392.00, 440.00, 466.16, 523.25]; 
+// Skala Raga India (Kafi, Bhairavi, Asavari)
+const scales = [
+  [261.63, 293.66, 311.13, 349.23, 392.00, 440.00, 466.16, 523.25], // Raga Kafi
+  [261.63, 277.18, 311.13, 349.23, 392.00, 415.30, 466.16, 523.25], // Raga Bhairavi
+  [261.63, 293.66, 311.13, 349.23, 392.00, 415.30, 466.16, 523.25]  // Raga Asavari
+];
 
-function playPluck(freq, when, vol=0.15){
+// 3 corak melodi berbeza
+const melodies = [
+  [0, 2, 4, 2, 1, 0, 1, 2, 4, 5, 4, 2, 1, 0, 0, 0],
+  [0, 1, 2, 3, 4, 3, 2, 1, 0, 2, 4, 5, 6, 5, 4, 2],
+  [0, 2, 3, 4, 3, 2, 0, 1, 2, 3, 4, 5, 4, 3, 2, 0]
+];
+
+function playPluck(freq, when, vol=0.12){
   const osc=audioCtx.createOscillator();
   const g=audioCtx.createGain();
-  osc.type='triangle'; // Bunyi macam petikan sitar
+  osc.type='triangle'; 
   osc.frequency.setValueAtTime(freq, when);
-  // Frekuensi melurut sedikit ke bawah (ciri khas alat muzik India)
   osc.frequency.exponentialRampToValueAtTime(freq*0.98, when+0.2);
-  
   g.gain.setValueAtTime(0, when);
   g.gain.linearRampToValueAtTime(vol, when+0.02);
-  g.gain.exponentialRampToValueAtTime(0.001, when+1.5);
-  
+  g.gain.exponentialRampToValueAtTime(0.001, when+1.2);
   osc.connect(g); g.connect(audioCtx.destination);
-  osc.start(when); osc.stop(when+1.6);
+  osc.start(when); osc.stop(when+1.3);
 }
 
-function playFlute(freq, dur, when, vol=0.08){
+function playFlute(freq, dur, when, vol=0.06){
   const osc=audioCtx.createOscillator();
   const g=audioCtx.createGain();
   osc.type='sine';
   osc.frequency.setValueAtTime(freq, when);
-  // Vibrato (getaran bunyi seruling)
+  
   const lfo = audioCtx.createOscillator();
   const lfoG = audioCtx.createGain();
   lfo.frequency.value = 5; 
@@ -304,8 +304,8 @@ function playFlute(freq, dur, when, vol=0.08){
   lfo.start(when);
   
   g.gain.setValueAtTime(0, when);
-  g.gain.linearRampToValueAtTime(vol, when+0.2);
-  g.gain.setValueAtTime(vol, when+dur-0.2);
+  g.gain.linearRampToValueAtTime(vol, when+0.15);
+  g.gain.setValueAtTime(vol, when+dur-0.15);
   g.gain.linearRampToValueAtTime(0, when+dur);
   
   osc.connect(g); g.connect(audioCtx.destination);
@@ -316,47 +316,42 @@ function playFlute(freq, dur, when, vol=0.08){
 function playSparkleSound(){
   if(!musicOn || !audioCtx) return;
   const now = audioCtx.currentTime;
-  const notes = [1046.50, 1318.51, 1567.98]; // Nada tinggi manis
+  const notes = [1046.50, 1318.51, 1567.98]; 
   notes.forEach((freq, i) => {
-    playFlute(freq, 0.2, now + i*0.05, 0.02);
+    playFlute(freq, 0.2, now + i*0.05, 0.015);
   });
 }
 
-function drone(){
-  const osc=audioCtx.createOscillator();
-  const g=audioCtx.createGain();
-  osc.type='sine';osc.frequency.value=130.81; // C3
-  g.gain.value=0.04;
-  osc.connect(g);g.connect(audioCtx.destination);
-  osc.start();
-  setTimeout(()=>{g.gain.linearRampToValueAtTime(0,audioCtx.currentTime+1.5);osc.stop(audioCtx.currentTime+1.6);},8000);
-}
+function playRandomPattern(){
+  if(!musicOn || !audioCtx) return;
+  const now = audioCtx.currentTime;
+  
+  // Pilih melodi dan skala secara rawak
+  const scaleIdx = Math.floor(Math.random() * scales.length);
+  const melodyIdx = Math.floor(Math.random() * melodies.length);
+  
+  const scale = scales[scaleIdx];
+  const melody = melodies[melodyIdx];
+  const tempo = 0.65; // Laju perlahan, tak rushing
 
-function scheduleMusic(){
-  if(!musicOn||!audioCtx)return;
-  const now=audioCtx.currentTime;
-  drone(); // Bunyi latar yang mendayu
-  
-  const tempo = 0.6; // Laju perlahan, tenang
-  // Melodi petikan (Sitar)
-  const melody = [0, 2, 4, 2, 1, 0, 1, 2, 4, 5, 4, 2, 1, 0, 0, 0];
-  
+  // Main melodi utama (Sitar)
   melody.forEach((idx, i) => {
-    const f = scale[idx % scale.length] * 2; // Oktar lebih tinggi
+    const f = scale[idx % scale.length] * 2; 
     playPluck(f, now + i*tempo, 0.1);
     
-    // Sesekali ada bunyi seruling panjang
+    // Sesekali ada seruling
     if (i % 4 === 0) {
-      playFlute(scale[idx] * 1.5, tempo*2, now + i*tempo, 0.04);
+      playFlute(scale[idx] * 1.5, tempo*2.5, now + i*tempo, 0.03);
     }
   });
   
-  // Bunyi bass drone bawah
+  // Bunyi bass bawah
   for(let i=0;i<4;i++){
-    playPluck(scale[0]/2, now + i*tempo*4, 0.08);
+    playPluck(scale[0]/2, now + i*tempo*4, 0.06);
   }
   
-  musicTimer = setTimeout(scheduleMusic, melody.length*tempo*1000);
+  // Jadualkan corak seterusnya
+  musicTimer = setTimeout(playRandomPattern, melody.length*tempo*1000);
 }
 
 soundBtn.onclick=()=>{
@@ -365,13 +360,14 @@ soundBtn.onclick=()=>{
   musicOn=!musicOn;
   soundBtn.textContent=musicOn?'🔊':'🔇';
   soundBtn.classList.toggle('active',musicOn);
-  if(musicOn){scheduleMusic();}
+  if(musicOn){playRandomPattern();}
   else{clearTimeout(musicTimer);}
 };
+
 document.addEventListener('click',function once(){
   initAudio();
   if(audioCtx.state==='suspended')audioCtx.resume();
-  if(musicOn && !musicTimer) scheduleMusic();
+  if(musicOn && !musicTimer) playRandomPattern();
   document.removeEventListener('click',once);
 },{once:true});
 
